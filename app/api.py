@@ -17,11 +17,17 @@ router = APIRouter()
 CA_INTERMEDIATE_KEY = "ca/intermediate/intermediate.key.pem"
 CA_INTERMEDIATE_CERT = "ca/intermediate/intermediate.cert.pem"
 
-CSR_DIR = "/tmp/csr"
-CERTS_DIR = "/tmp/certs"
+CSR_DIR = "/csr"
+CERTS_DIR = "/certs"
 
-os.makedirs(CSR_DIR, exist_ok=True)
-os.makedirs(CERTS_DIR, exist_ok=True)
+#os.makedirs(CSR_DIR, exist_ok=True)
+#os.makedirs(CERTS_DIR, exist_ok=True)
+try:
+    os.makedirs(CSR_DIR, exist_ok=True)
+    os.makedirs(CERTS_DIR, exist_ok=True)
+except Exception as e:
+    print(f"❌ Failed to create directories: {e}")
+    print("Working Directory:", os.getcwd())
 
 @router.post("/issue")
 async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(get_db)):
