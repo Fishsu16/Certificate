@@ -121,6 +121,6 @@ async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(
         serial_number=serial_number,
     )
     db.add(cert_record)
-    db.commit()
+    await db.commit()
 
     return FileResponse(cert_path, filename=f"{cn}.crt", media_type="application/x-pem-file")
