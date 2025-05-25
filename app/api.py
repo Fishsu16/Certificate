@@ -6,11 +6,12 @@ from cryptography.hazmat.backends import default_backend
 from datetime import datetime, timedelta
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
+#from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+#from sqlalchemy.orm import sessionmaker
 from app.db import get_db
 from app.models import Certificate
 import subprocess
-from fastapi import HTTPException
 import logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
