@@ -11,6 +11,8 @@ from app.db import get_db
 from app.models import Certificate
 import subprocess
 from fastapi import HTTPException
+import logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -25,10 +27,10 @@ CERTS_DIR = "/certs"
 try:
     os.makedirs(CSR_DIR, exist_ok=True)
     os.makedirs(CERTS_DIR, exist_ok=True)
-    print("Working Directory:", os.getcwd())
+    logger.info("Working Directory:", os.getcwd())
 except Exception as e:
-    print(f"❌ Failed to create directories: {e}")
-    print("Working Directory:", os.getcwd())
+    logger.info(f"❌ Failed to create directories: {e}")
+    logger.info("Working Directory:", os.getcwd())
 
 @router.post("/issue")
 async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -40,6 +42,7 @@ async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(
     cn = cn_attr[0].value if cn_attr else None
     with open(csr_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
+    logger.info(cn)
     return {"CN": cn}
 
     if file.content_type != "application/x-pem-file" and not (file.filename.endswith(".csr") or file.filename.endswith(".pem")):
