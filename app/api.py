@@ -44,7 +44,7 @@ async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(
     with open(csr_path, "wb") as f:
         #shutil.copyfileobj(file.file, f)
         f.write(contents)
-    logger.info(cn)
+    logger.info(f"📥 CN from CSR: {cn}")
     return {"CN": cn}
 
     if file.content_type != "application/x-pem-file" and not (file.filename.endswith(".csr") or file.filename.endswith(".pem")):
