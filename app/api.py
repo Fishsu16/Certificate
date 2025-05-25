@@ -36,7 +36,7 @@ except Exception as e:
     logger.info(f"Working Directory: {os.getcwd()}")
 
 @router.post("/issue")
-async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
     if file.content_type != "application/x-pem-file" and not (file.filename.endswith(".csr") or file.filename.endswith(".pem")):
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PEM CSR file.")
 
