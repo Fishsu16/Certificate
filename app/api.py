@@ -25,6 +25,7 @@ CERTS_DIR = "/certs"
 try:
     os.makedirs(CSR_DIR, exist_ok=True)
     os.makedirs(CERTS_DIR, exist_ok=True)
+    print("Working Directory:", os.getcwd())
 except Exception as e:
     print(f"❌ Failed to create directories: {e}")
     print("Working Directory:", os.getcwd())
