@@ -36,18 +36,6 @@ except Exception as e:
 
 @router.post("/issue")
 async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    contents = await file.read()
-    csr_id = str(uuid.uuid4())
-    csr_path = os.path.join(CSR_DIR, f"{csr_id}.csr")
-    csr = x509.load_pem_x509_csr(contents, default_backend())
-    cn_attr = csr.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-    cn = cn_attr[0].value if cn_attr else None
-    with open(csr_path, "wb") as f:
-        #shutil.copyfileobj(file.file, f)
-        f.write(contents)
-    logger.info(f"📥 CN from CSR: {cn}")
-    return {"CN": cn}
-
     if file.content_type != "application/x-pem-file" and not (file.filename.endswith(".csr") or file.filename.endswith(".pem")):
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PEM CSR file.")
 
