@@ -30,8 +30,8 @@ async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(
 
     csr_id = str(uuid.uuid4())
     csr_path = os.path.join(CSR_DIR, f"{csr_id}.csr")
-    #with open(csr_path, "wb") as f:
-    #    shutil.copyfileobj(file.file, f)
+    with open(csr_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
 
     #try:
     #    result = subprocess.run(
