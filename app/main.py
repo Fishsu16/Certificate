@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.api import router as api_router
-from app.db import get_db
+from app.db import get_db, engine, Base
 
 app = FastAPI(title="Custom CA Certificate Server")
 
