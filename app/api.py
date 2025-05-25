@@ -25,6 +25,11 @@ os.makedirs(CERTS_DIR, exist_ok=True)
 
 @router.post("/issue")
 async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    contents = await file.read()
+    csr = x509.load_pem_x509_csr(contents, default_backend())
+    cn_attr = csr.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+    cn = cn_attr[0].value if cn_attr else None
+    return {"CN": cn}
     if file.content_type != "application/x-pem-file" and not (file.filename.endswith(".csr") or file.filename.endswith(".pem")):
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PEM CSR file.")
 
