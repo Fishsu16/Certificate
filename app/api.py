@@ -1,6 +1,7 @@
 import os
 import shutil
 import uuid
+import random
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from datetime import datetime, timedelta
@@ -80,7 +81,8 @@ async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Dep
 
     cn = cn_attr[0].value
 
-    serial_number = uuid.uuid4().int >> 64
+    #serial_number = uuid.uuid4().int >> 64
+    serial_number = random.getrandbits(63)  # 限定為 63 bits，避免超出上限
     cert_path = os.path.join(CERTS_DIR, f"{csr_id}.crt")
 
     cmd = [
