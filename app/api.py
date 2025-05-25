@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 print("🚀 issue_certificate called")
 
-CA_INTERMEDIATE_KEY = "../ca/intermediate/intermediate.key.pem"
-CA_INTERMEDIATE_CERT = "../ca/intermediate/intermediate.cert.pem"
+CA_INTERMEDIATE_KEY = "ca/intermediate/intermediate.key.pem"
+CA_INTERMEDIATE_CERT = "ca/intermediate/intermediate.cert.pem"
 
 CSR_DIR = "../csr/"
 CERTS_DIR = "../certs/"
