@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+print("🚀 issue_certificate called")
 
 CA_INTERMEDIATE_KEY = "ca/intermediate/intermediate.key.pem"
 CA_INTERMEDIATE_CERT = "ca/intermediate/intermediate.cert.pem"
