@@ -12,6 +12,7 @@ from app.models import Certificate
 import subprocess
 from fastapi import HTTPException
 import logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -19,18 +20,18 @@ router = APIRouter()
 CA_INTERMEDIATE_KEY = "ca/intermediate/intermediate.key.pem"
 CA_INTERMEDIATE_CERT = "ca/intermediate/intermediate.cert.pem"
 
-CSR_DIR = "/csr"
-CERTS_DIR = "/certs"
+CSR_DIR = "csr"
+CERTS_DIR = "certs"
 
 #os.makedirs(CSR_DIR, exist_ok=True)
 #os.makedirs(CERTS_DIR, exist_ok=True)
 try:
     os.makedirs(CSR_DIR, exist_ok=True)
     os.makedirs(CERTS_DIR, exist_ok=True)
-    logger.info("Working Directory:", os.getcwd())
+    logger.info(f"Working Directory: {os.getcwd()}")
 except Exception as e:
     logger.info(f"❌ Failed to create directories: {e}")
-    logger.info("Working Directory:", os.getcwd())
+    logger.info(f"Working Directory: {os.getcwd()}")
 
 @router.post("/issue")
 async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -41,7 +42,8 @@ async def issue_certificate(file: UploadFile = File(...), db: Session = Depends(
     cn_attr = csr.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
     cn = cn_attr[0].value if cn_attr else None
     with open(csr_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+        #shutil.copyfileobj(file.file, f)
+        f.write(contents)
     logger.info(cn)
     return {"CN": cn}
 
