@@ -17,8 +17,8 @@ router = APIRouter()
 CA_INTERMEDIATE_KEY = "ca/intermediate/intermediate.key.pem"
 CA_INTERMEDIATE_CERT = "ca/intermediate/intermediate.cert.pem"
 
-CSR_DIR = "csr"
-CERTS_DIR = "certs"
+CSR_DIR = "/tmp/csr"
+CERTS_DIR = "/tmp/certs"
 
 os.makedirs(CSR_DIR, exist_ok=True)
 os.makedirs(CERTS_DIR, exist_ok=True)
