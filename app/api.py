@@ -102,7 +102,7 @@ async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Dep
 
     return FileResponse(cert_path, filename=f"{cn}.crt", media_type="application/x-pem-file")
 
-@router.get("/api/intermediate_cert")
+@router.get("/intermediate_cert")
 async def get_intermediate_cert():
     """
     讓 client 下載 Intermediate CA 憑證
