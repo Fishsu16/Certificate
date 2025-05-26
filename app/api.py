@@ -7,9 +7,7 @@ from cryptography.hazmat.backends import default_backend
 from datetime import datetime, timedelta
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
-#from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-#from sqlalchemy.orm import sessionmaker
 from app.db import get_db
 from app.models import Certificate
 import subprocess
@@ -18,16 +16,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-print("🚀 issue_certificate called")
 
+# path setting
 CA_INTERMEDIATE_KEY = "ca/intermediate/intermediate.key.pem"
 CA_INTERMEDIATE_CERT = "ca/intermediate/intermediate.cert.pem"
 
 CSR_DIR = "csr/"
 CERTS_DIR = "certs/"
 
-#os.makedirs(CSR_DIR, exist_ok=True)
-#os.makedirs(CERTS_DIR, exist_ok=True)
 try:
     os.makedirs(CSR_DIR, exist_ok=True)
     os.makedirs(CERTS_DIR, exist_ok=True)
@@ -44,29 +40,7 @@ async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Dep
     csr_id = str(uuid.uuid4())
     csr_path = os.path.join(CSR_DIR, f"{csr_id}.csr")
     with open(csr_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    #try:
-    #    result = subprocess.run(
-    #        ["openssl", "req", "-in", csr_path, "-noout", "-subject"],
-    #        capture_output=True,
-    #        text=True,
-    #        check=True,
-    #    )
-    #    subject = result.stdout.strip()
-    #    cn = None
-    #    if subject.startswith("subject="):
-    #        parts = subject[8:].split("/")
-    #        for part in parts:
-    #            if part.startswith("CN="):
-    #                cn = part[3:]
-    #                break
-    #    if cn is None:
-    #        raise ValueError("CN not found in CSR subject")
-    #except Exception as e:
-    #    os.remove(csr_path)
-    #    raise HTTPException(status_code=400, detail=f"Failed to parse CSR: {str(e)}")
-    
+        shutil.copyfileobj(file.file, f)    
     with open(csr_path, "rb") as f:
         csr_data = f.read()
 
@@ -127,3 +101,14 @@ async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Dep
     await db.commit()
 
     return FileResponse(cert_path, filename=f"{cn}.crt", media_type="application/x-pem-file")
+
+@app.get("/api/intermediate_cert")
+async def get_intermediate_cert():
+    """
+    讓 client 下載 Intermediate CA 憑證
+    """
+    return FileResponse(
+        CA_INTERMEDIATE_CERT,
+        media_type="application/x-pem-file",
+        filename="intermediate.cert.pem",
+    )
