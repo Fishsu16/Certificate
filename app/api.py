@@ -163,7 +163,10 @@ async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Dep
     cert_builder = cert_builder.not_valid_after(expire_time)
 
     # 複製 CSR 中的 extension（包括自訂的 extended info）
+    print("CSR Extensions:")
     for ext in csr.extensions:
+        print(f"- {ext.oid.dotted_string} | critical={ext.critical} | value={ext.value}")
+    #for ext in csr.extensions:
         cert_builder = cert_builder.add_extension(ext.value, critical=ext.critical)
 
     # 簽署憑證
