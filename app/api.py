@@ -4,6 +4,8 @@ import uuid
 import random
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
 from datetime import datetime, timedelta
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
@@ -14,7 +16,7 @@ import subprocess
 import logging
 
 # 匯入自訂 OID（你可以放在共用模組）
-from cryptography.x509.oid import ObjectIdentifier
+from cryptography.x509.oid import ObjectIdentifier, NameOID
 OID_SIGN_TAG = ObjectIdentifier("1.3.6.1.4.1.55555.1.1")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
