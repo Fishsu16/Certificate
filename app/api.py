@@ -12,6 +12,11 @@ from app.db import get_db
 from app.models import Certificate
 import subprocess
 import logging
+
+# 匯入自訂 OID（你可以放在共用模組）
+from cryptography.x509.oid import ObjectIdentifier
+OID_SIGN_TAG = ObjectIdentifier("1.3.6.1.4.1.55555.1.1")
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -32,6 +37,88 @@ except Exception as e:
     logger.info(f"❌ Failed to create directories: {e}")
     logger.info(f"Working Directory: {os.getcwd()}")
 
+#@router.post("/issue")
+#async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+#    if file.content_type != "application/x-pem-file" and not (file.filename.endswith(".csr") or file.filename.endswith(".pem")):
+#        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PEM CSR file.")
+#
+#    csr_id = str(uuid.uuid4())
+#    csr_path = os.path.join(CSR_DIR, f"{csr_id}.csr")
+#    with open(csr_path, "wb") as f:
+#        shutil.copyfileobj(file.file, f)    
+#    with open(csr_path, "rb") as f:
+#        csr_data = f.read()
+#
+#    try:
+#        csr = x509.load_pem_x509_csr(csr_data, default_backend())
+#    except Exception as e:
+#        raise HTTPException(status_code=400, detail=f"Failed to load CSR: {str(e)}")
+#
+#    cn_attr = csr.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+#    if not cn_attr:
+#        raise HTTPException(status_code=400, detail="CN not found in CSR subject")
+#
+#    cn = cn_attr[0].value
+#
+#    #serial_number = uuid.uuid4().int >> 64
+#    serial_number = random.getrandbits(63)  # 限定為 63 bits，避免超出上限
+#    cert_path = os.path.join(CERTS_DIR, f"{csr_id}.crt")
+#
+#    cmd = [
+#        "openssl",
+#        "x509",
+#        "-req",
+#        "-in",
+#        csr_path,
+#        "-CA",
+#        CA_INTERMEDIATE_CERT,
+#        "-CAkey",
+#        CA_INTERMEDIATE_KEY,
+#        "-CAcreateserial",
+#        "-out",
+#        cert_path,
+#        "-days",
+#        "365",
+#        "-sha256",
+#        "-set_serial",
+#        str(serial_number),
+#    ]
+#
+#    try:
+#        subprocess.run(cmd, check=True)
+#    except Exception as e:
+#        os.remove(csr_path)
+#        raise HTTPException(status_code=500, detail=f"Certificate signing failed: {str(e)}")
+#
+#    issue_time = datetime.utcnow()
+#    expire_time = issue_time + timedelta(days=365)
+#
+#    cert_record = Certificate(
+#        id=csr_id,
+#        common_name=cn,
+#        csr_filename=f"{csr_id}.csr",
+#        cert_filename=f"{csr_id}.crt",
+#        issue_time=issue_time,
+#        expire_time=expire_time,
+#        serial_number=serial_number,
+#    )
+#    db.add(cert_record)
+#    await db.commit()
+#
+#    return FileResponse(cert_path, filename=f"{cn}.crt", media_type="application/x-pem-file")
+
+@router.get("/intermediate_cert")
+async def get_intermediate_cert():
+    """
+    讓 client 下載 Intermediate CA 憑證
+    """
+    return FileResponse(
+        CA_INTERMEDIATE_CERT,
+        media_type="application/x-pem-file",
+        filename="intermediate.cert.pem",
+    )
+
+
 @router.post("/issue")
 async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
     if file.content_type != "application/x-pem-file" and not (file.filename.endswith(".csr") or file.filename.endswith(".pem")):
@@ -40,7 +127,8 @@ async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Dep
     csr_id = str(uuid.uuid4())
     csr_path = os.path.join(CSR_DIR, f"{csr_id}.csr")
     with open(csr_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)    
+        shutil.copyfileobj(file.file, f)
+
     with open(csr_path, "rb") as f:
         csr_data = f.read()
 
@@ -54,40 +142,38 @@ async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Dep
         raise HTTPException(status_code=400, detail="CN not found in CSR subject")
 
     cn = cn_attr[0].value
-
-    #serial_number = uuid.uuid4().int >> 64
-    serial_number = random.getrandbits(63)  # 限定為 63 bits，避免超出上限
-    cert_path = os.path.join(CERTS_DIR, f"{csr_id}.crt")
-
-    cmd = [
-        "openssl",
-        "x509",
-        "-req",
-        "-in",
-        csr_path,
-        "-CA",
-        CA_INTERMEDIATE_CERT,
-        "-CAkey",
-        CA_INTERMEDIATE_KEY,
-        "-CAcreateserial",
-        "-out",
-        cert_path,
-        "-days",
-        "365",
-        "-sha256",
-        "-set_serial",
-        str(serial_number),
-    ]
-
-    try:
-        subprocess.run(cmd, check=True)
-    except Exception as e:
-        os.remove(csr_path)
-        raise HTTPException(status_code=500, detail=f"Certificate signing failed: {str(e)}")
+    serial_number = random.getrandbits(63)
 
     issue_time = datetime.utcnow()
     expire_time = issue_time + timedelta(days=365)
 
+    # 載入 CA 私鑰與憑證
+    with open(CA_INTERMEDIATE_KEY, "rb") as f:
+        ca_key = serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
+    with open(CA_INTERMEDIATE_CERT, "rb") as f:
+        ca_cert = x509.load_pem_x509_certificate(f.read(), backend=default_backend())
+
+    # 準備 certificate builder
+    cert_builder = x509.CertificateBuilder()
+    cert_builder = cert_builder.subject_name(csr.subject)
+    cert_builder = cert_builder.issuer_name(ca_cert.subject)
+    cert_builder = cert_builder.public_key(csr.public_key())
+    cert_builder = cert_builder.serial_number(serial_number)
+    cert_builder = cert_builder.not_valid_before(issue_time)
+    cert_builder = cert_builder.not_valid_after(expire_time)
+
+    # 複製 CSR 中的 extension（包括自訂的 extended info）
+    for ext in csr.extensions:
+        cert_builder = cert_builder.add_extension(ext.value, critical=ext.critical)
+
+    # 簽署憑證
+    cert = cert_builder.sign(private_key=ca_key, algorithm=hashes.SHA256(), backend=default_backend())
+
+    cert_path = os.path.join(CERTS_DIR, f"{csr_id}.crt")
+    with open(cert_path, "wb") as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
+
+    # 儲存到資料庫
     cert_record = Certificate(
         id=csr_id,
         common_name=cn,
@@ -101,14 +187,3 @@ async def issue_certificate(file: UploadFile = File(...), db: AsyncSession = Dep
     await db.commit()
 
     return FileResponse(cert_path, filename=f"{cn}.crt", media_type="application/x-pem-file")
-
-@router.get("/intermediate_cert")
-async def get_intermediate_cert():
-    """
-    讓 client 下載 Intermediate CA 憑證
-    """
-    return FileResponse(
-        CA_INTERMEDIATE_CERT,
-        media_type="application/x-pem-file",
-        filename="intermediate.cert.pem",
-    )
